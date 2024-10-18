@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { redis } = require("../../server/utils/redis");
+const { redis } = require("../utils/redis");
 const { pool } = require("../db");
 const { getWeatherData } = require("../utils/getWeatherData");
 
