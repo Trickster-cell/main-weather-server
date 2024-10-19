@@ -102,7 +102,7 @@ const userLoginControl = async (req, res) => {
 
 const updateUserSubscriptionControl = async (email, cities) => {
   // Check if the required fields are provided
-  if (!email || !Array.isArray(cities) || cities.length === 0) {
+  if (!email || !Array.isArray(cities)) {
     throw new Error("Email and an array of cities are required.");
   }
 
@@ -125,7 +125,15 @@ const updateUserSubscriptionControl = async (email, cities) => {
 
 const userSubsControl = async (req, res) => {
   const { userId } = req;
-  const { arrayOfCities } = req.body; // Assuming you're sending data in the request body
+  const {
+    arrayOfCities,
+    minTemp,
+    maxTemp,
+    minHumidity,
+    maxHumidity,
+    minWindSpeed,
+    maxWindSpeed,
+  } = req.body; // Assuming you're sending data in the request body
 
   try {
     // Fetch the user by ID
@@ -141,12 +149,40 @@ const userSubsControl = async (req, res) => {
 
     // Update the subscribedCitys field
     user.subscribedCitys = arrayOfCities;
+    user.minTemp = minTemp;
+    user.maxTemp = maxTemp;
+    user.minHumidity = minHumidity;
+    user.maxHumidity = maxHumidity;
+    user.minWindSpeed = minWindSpeed;
+    user.maxWindSpeed = maxWindSpeed;
 
     // Save the updated user
     await user.save();
 
     // Call the subscription update control function
     await updateUserSubscriptionControl(user.email, user.subscribedCitys);
+
+    await pool.query("DELETE FROM alert_thresholds WHERE user_email = $1", [
+      user.email,
+    ]);
+
+    const promises = arrayOfCities.map((city) => {
+      return pool.query(
+        "INSERT INTO alert_thresholds (user_email, city, min_temp,max_temp,min_humidity,max_humidity,min_wind_speed,max_wind_speed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (user_email, city) DO NOTHING",
+        [
+          user.email,
+          city,
+          minTemp,
+          maxTemp,
+          minHumidity,
+          maxHumidity,
+          minWindSpeed,
+          maxWindSpeed,
+        ]
+      );
+    });
+
+    await Promise.all(promises);
 
     return res.status(200).json({
       message: "Subscription successful!",
