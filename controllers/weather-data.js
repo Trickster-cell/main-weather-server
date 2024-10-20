@@ -110,13 +110,12 @@ const get7daysDataControl = async (req, res) => {
           `SELECT * 
              FROM daily_summaries 
              WHERE city = $1 
-             AND date >= NOW() - INTERVAL '7 days'
              AND date < CURRENT_DATE
              ORDER BY date DESC`,
           [city]
         );
         finalData[city] = result.rows;
-        await redis.set(cacheKey, JSON.stringify(finalData[city]), "EX", 12 * 3600);
+        await redis.set(cacheKey, JSON.stringify(finalData[city]), "EX", 1 * 3600);
       }
     });
     await Promise.all(promises);
