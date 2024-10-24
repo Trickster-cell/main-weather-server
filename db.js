@@ -4,15 +4,16 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 //PostGreSQL
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const pool = new Pool({
   connectionString: process.env.DB_CONNECTION_STRING,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: isDevelopment ? false : { rejectUnauthorized: false },
 });
 
 const DBConnection = async () => {
-  const MONGO_URI = process.env.MONGODB_URI;
+  const MONGO_URI = process.env.MONGODB_URI || "mongodb://root:example@mongo:27017/your_database";
+  console.log(MONGO_URI)
 
   try {
     await mongoose.connect(MONGO_URI);

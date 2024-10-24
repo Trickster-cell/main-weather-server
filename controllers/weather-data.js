@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { redis } = require("../utils/redis");
 const { pool } = require("../db");
-const { getWeatherData } = require("../utils/getWeatherData");
+const { getWeatherData, convertTemperature } = require("../utils/getWeatherData");
 
 const cities = [
   "Delhi",

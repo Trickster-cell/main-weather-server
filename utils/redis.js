@@ -8,4 +8,13 @@ const redis = new Redis({
   // Add any other necessary options here
 });
 
+redis.on('connect', () => {
+  console.log('Connected to Redis successfully!');
+});
+
+// Event listener for connection errors
+redis.on('error', (err) => {
+  console.error('Error connecting to Redis:', err);
+});
+
 module.exports = { redis };
