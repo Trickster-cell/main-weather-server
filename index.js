@@ -1,6 +1,5 @@
 const express = require("express");
 require("dotenv").config();
-
 const cors = require("cors");
 
 const { DBConnection } = require("./db");
@@ -9,20 +8,24 @@ const { weatherRouter } = require("./routes/weather-data");
 
 const app = express();
 
+// Middleware setup
 app.use(cors());
 app.use(express.json());
 
-app.use("/auth", userRouter);
-app.use("/weather", weatherRouter);
+// Route setup
+app.use("/auth", userRouter);      // User authentication routes
+app.use("/weather", weatherRouter); // Weather data routes
 
-port = process.env.PORT || 5001;
+const port = process.env.PORT || 5001;
 
+// Initialize database connection
 DBConnection();
 
 app.get("/", (req, res) => {
   res.send("Main Server");
 });
 
+// Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

@@ -3,6 +3,7 @@ const { redis } = require("../utils/redis");
 const { pool } = require("../db");
 const { getWeatherData, convertTemperature } = require("../utils/getWeatherData");
 
+// List of cities for weather data retrieval
 const cities = [
   "Delhi",
   "Mumbai",
@@ -12,14 +13,15 @@ const cities = [
   "Hyderabad",
 ];
 
+// Fetch and process weather data for a given city
 const getCityData = async (city) => {
   const data = await getWeatherData(city);
   const temperature = convertTemperature(data.main.temp);
   const feelsLike = convertTemperature(data.main.feels_like);
   const condition = data.weather[0].main;
   const timestamp = data.dt;
-  const humidity = data.main.humidity; // New field
-  const windSpeed = data.wind.speed; // New field
+  const humidity = data.main.humidity; // Humidity level
+  const windSpeed = data.wind.speed; // Wind speed
   const cacheKey = `weather:${city}`;
   const cacheValue = JSON.stringify({
     temperature,
@@ -33,6 +35,7 @@ const getCityData = async (city) => {
   return { cacheKey, cacheValue };
 };
 
+// Controller to get current weather data for all cities
 const getCurrentDataControl = async (req, res) => {
   try {
     const finalData = {};
@@ -46,7 +49,7 @@ const getCurrentDataControl = async (req, res) => {
       } else {
         // Fetch weather data, cache it, and add it to finalData
         const data = await getCityData(city);
-        await redis.set(data.cacheKey, data.cacheValue, "EX", 3600); // Add expiration time
+        await redis.set(data.cacheKey, data.cacheValue, "EX", 3600); // Cache for 1 hour
         finalData[city] = JSON.parse(data.cacheValue); // Ensure parsed value is stored
       }
     }
@@ -58,21 +61,24 @@ const getCurrentDataControl = async (req, res) => {
   }
 };
 
+// Controller to update weather data cache for all cities
 const updateCacheData = async (req, res) => {
   try {
     const finalData = {};
     for (const city of cities) {
-      // Set the cache value with an expiration time (e.g., 1 hour)
+      // Fetch weather data and update the cache
       const data = await getCityData(city);
-      await redis.set(data.cacheKey, data.cacheValue, "EX", 3600);
+      await redis.set(data.cacheKey, data.cacheValue, "EX", 3600); // Cache for 1 hour
       finalData[city] = JSON.parse(data.cacheValue); // Ensure parsed value is stored
     }
     res.status(200).json(finalData);
   } catch (error) {
     console.error("Failed to fetch and store weather data:", error);
+    res.status(500).json({ error: "Failed to update cache" });
   }
 };
 
+// Controller to get today's weather data from the database
 const todayDataControl = async (req, res) => {
   try {
     const finalData = {};
@@ -93,13 +99,14 @@ const todayDataControl = async (req, res) => {
     res.status(200).json(finalData);
   } catch (error) {
     console.error("Failed to fetch and store weather data:", error);
-    res.status(500).json({ error: "Failed to fetch weather data" });
+    res.status(500).json({ error: "Failed to fetch today's weather data" });
   }
 };
 
+// Controller to get 7 days of weather data
 const get7daysDataControl = async (req, res) => {
   try {
-    finalData = {};
+    const finalData = {};
     const promises = cities.map(async (city) => {
       const cacheKey = `last7:${city}`;
       const cachedData = await redis.get(cacheKey);
@@ -115,7 +122,7 @@ const get7daysDataControl = async (req, res) => {
           [city]
         );
         finalData[city] = result.rows;
-        await redis.set(cacheKey, JSON.stringify(finalData[city]), "EX", 1 * 3600);
+        await redis.set(cacheKey, JSON.stringify(finalData[city]), "EX", 3600); // Cache for 1 hour
       }
     });
     await Promise.all(promises);
@@ -124,7 +131,7 @@ const get7daysDataControl = async (req, res) => {
     res.status(200).json(finalData);
   } catch (error) {
     console.error("Failed to fetch and store weather data:", error);
-    res.status(500).json({ error: "Failed to fetch weather data" });
+    res.status(500).json({ error: "Failed to fetch 7-day weather data" });
   }
 };
 

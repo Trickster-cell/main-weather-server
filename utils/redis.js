@@ -1,18 +1,20 @@
 const Redis = require("ioredis");
 require('dotenv').config();
-// Create a Redis client and connect to the remote Redis server
+
+// Create a Redis client and connect to the Redis server using environment variables
 const redis = new Redis({
-  host: process.env.REDIS_HOST, // Replace with your Redis host
-  port: process.env.REDIS_PORT, // Replace with your Redis port
-  password: process.env.REDIS_PASSWORD, // Replace with your Redis password (if required)
-  // Add any other necessary options here
+  host: process.env.REDIS_HOST, // Redis server host
+  port: process.env.REDIS_PORT, // Redis server port
+  password: process.env.REDIS_PASSWORD, // Redis password (if required)
+  // Additional options can be added here as needed
 });
 
+// Log successful connection to Redis
 redis.on('connect', () => {
   console.log('Connected to Redis successfully!');
 });
 
-// Event listener for connection errors
+// Log any connection errors
 redis.on('error', (err) => {
   console.error('Error connecting to Redis:', err);
 });
